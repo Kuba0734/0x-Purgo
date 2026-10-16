@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'">
+  <title>Purgo</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="bg-orb o1"></div><div class="bg-orb o2"></div>
+
+  <header class="titlebar">
+    <div class="brand"><img class="logo" src="icon.png" alt=""><span>Purgo</span></div>
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-page="apps" role="tab"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>Apps</button>
+      <button class="tab" data-page="clean" role="tab"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9v9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/></svg>Speicher</button>
+      <button class="tab" data-page="opt" role="tab"><svg viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>Optimieren</button>
+      <span class="tab-ind" id="tabInd"></span>
+    </nav>
+    <div id="adminBadge" class="badge"></div>
+    <button class="ghost sm nodrag" id="logBtn">Log <span id="logCount" class="pill">0</span></button>
+  </header>
+
+  <div class="page active" id="page-apps">
+  <div class="toolbar">
+    <div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="search" placeholder="Apps durchsuchen …" aria-label="Apps durchsuchen"></div>
+    <div class="chips" id="filters" role="tablist">
+      <button class="chip active" data-f="all">Alle <b id="cAll">0</b></button>
+      <button class="chip" data-f="win32">Programme <b id="cWin">0</b></button>
+      <button class="chip" data-f="store">Store <b id="cStore">0</b></button>
+      <button class="chip" data-f="portable">Ohne Eintrag <b id="cPort">0</b></button>
+    </div>
+    <select id="driveFilter" aria-label="Laufwerk"><option value="">Alle Laufwerke</option></select>
+    <select id="sort" aria-label="Sortierung">
+      <option value="name">Name</option>
+      <option value="size">Größe</option>
+      <option value="date">Installationsdatum</option>
+      <option value="publisher">Herausgeber</option>
+    </select>
+    <button class="icon-btn" id="refresh" title="Neu laden"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg></button>
+  </div>
+
+  <main>
+    <section class="list-wrap">
+      <div class="list-head">
+        <label class="check"><input type="checkbox" id="selAll"><span></span></label>
+        <span>App</span><span>Herausgeber</span><span>Version</span><span>Installiert</span><span class="r">Größe</span>
+      </div>
+      <div id="list" class="list"></div>
+      <div id="loading" class="loading"><div class="spinner"></div><p>Scanne installierte Apps …</p></div>
+    </section>
+
+    <aside id="details" class="details">
+      <div class="empty-details"><div class="ghost-icon"></div><p>Wähle eine App für Details</p></div>
+    </aside>
+  </main>
+
+  <footer class="bottombar">
+    <div class="sel-info"><b id="selCount">0</b> ausgewählt · <span id="selSize">0 B</span></div>
+    <label class="toggle"><input type="checkbox" id="optLeftovers" checked><span class="track"><span class="thumb"></span></span>Zugehörige Dateien & Registry entfernen</label>
+    <label class="toggle"><input type="checkbox" id="optSilent" checked><span class="track"><span class="thumb"></span></span>Still deinstallieren</label>
+    <button class="primary" id="goBtn" disabled><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>Deinstallieren</button>
+  </footer>
+  </div>
+
+  <!-- Speicher-Seite -->
+  <div class="page" id="page-clean">
+    <div class="clean-scroll">
+      <div id="driveCards" class="drive-cards"></div>
+
+      <div class="sec-head">
+        <div><h2>Sicher bereinigen</h2><p class="muted">Diese Bereiche kann Windows bzw. die jeweilige App jederzeit neu erzeugen.</p></div>
+        <button class="ghost" id="cleanRescan"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg>Neu analysieren</button>
+      </div>
+      <div id="catGrid" class="cat-grid"></div>
+
+      <div class="sec-head">
+        <div><h2>Reste deinstallierter Apps</h2><p class="muted">Ordner, Registry-Schlüssel und Verknüpfungen ohne zugehörige App. Sichere Treffer sind vorausgewählt, den Rest bitte prüfen.</p></div>
+        <button class="primary" id="orphGo"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Reste suchen</button>
+      </div>
+      <div class="large-box">
+        <div id="orphStatus" class="large-status muted">Findet übrig gebliebene Dateien von Programmen, die schon entfernt wurden.</div>
+        <div id="orphList" class="large-list"></div>
+      </div>
+
+      <div class="sec-head">
+        <div><h2>Große Dateien finden</h2><p class="muted">Größte Dateien auf einem Laufwerk. Gelöschte Dateien landen im Papierkorb.</p></div>
+        <div class="large-ctl">
+          <select id="largeDrive" aria-label="Laufwerk"></select>
+          <select id="largeMin" aria-label="Mindestgröße">
+            <option value="100">ab 100 MB</option><option value="500" selected>ab 500 MB</option><option value="1024">ab 1 GB</option><option value="5120">ab 5 GB</option>
+          </select>
+          <button class="primary" id="largeGo"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Suchen</button>
+        </div>
+      </div>
+      <div id="largeBox" class="large-box">
+        <div id="largeStatus" class="large-status muted">Wähle ein Laufwerk und starte die Suche.</div>
+        <div id="largeList" class="large-list"></div>
+      </div>
+    </div>
+    <footer class="bottombar">
+      <div class="sel-info"><b id="cleanCount">0</b> Bereiche ausgewählt · <span id="cleanSize">0 B</span> frei werdend</div>
+      <button class="danger" id="orphDel" hidden></button>
+      <button class="danger" id="largeTrash" hidden>Dateien in Papierkorb</button>
+      <button class="primary" id="cleanGo" disabled><svg viewBox="0 0 24 24"><path d="M12 3v3M5.6 5.6l2.1 2.1M3 12h3M18.4 5.6l-2.1 2.1M21 12h-3M8 21l4-9 4 9"/></svg>Bereinigen</button>
+    </footer>
+  </div>
+
+  <!-- Optimieren-Seite -->
+  <div class="page" id="page-opt">
+    <div class="clean-scroll">
+      <div class="opt-hero">
+        <div class="opt-score"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="50" class="ring-bg"/><circle cx="60" cy="60" r="50" class="ring-fg" id="optRing" style="stroke-dasharray:314.2;stroke-dashoffset:314.2"/></svg><b id="optScore">–</b></div>
+        <div><h2>System optimieren</h2><p class="muted">Jeder Schalter wirkt sofort und lässt sich jederzeit zurückdrehen. Die ursprünglichen Werte werden gesichert.</p>
+          <p class="muted" id="optSummary"></p></div>
+        <button class="ghost" id="optExplorer" hidden><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg>Explorer neu starten</button>
+      </div>
+
+      <div class="sec-head">
+        <div><h2>Windows-Bloatware entfernen</h2><p class="muted">Vorinstallierte Apps, die du wahrscheinlich nicht brauchst. Lassen sich über den Microsoft Store wieder installieren.</p></div>
+        <div class="large-ctl">
+          <label class="toggle"><input type="checkbox" id="bloatPrevent" checked><span class="track"><span class="thumb"></span></span>Neuinstallation verhindern</label>
+          <button class="danger" id="bloatGo" disabled>Ausgewählte entfernen</button>
+        </div>
+      </div>
+      <div id="bloatBox" class="bloat-grid"><div class="large-status muted"><div class="spinner"></div>Suche vorinstallierte Apps …</div></div>
+
+      <div id="tweakGroups"></div>
+
+      <div class="sec-head">
+        <div><h2>Autostart</h2><p class="muted">Programme, die mit Windows starten. Ausschalten beschleunigt den Systemstart – das Programm bleibt installiert.</p></div>
+      </div>
+      <div class="large-box"><div id="startupList" class="large-list startup-list"><div class="large-status muted"><div class="spinner"></div>Lade Autostart-Einträge …</div></div></div>
+    </div>
+  </div>
+
+  <!-- Live-Log -->
+  <div id="logPanel" class="log-panel">
+    <div class="log-head"><span><i class="dot live"></i>Live-Log</span><div><button class="ghost sm" id="logClear">Leeren</button><button class="ghost sm" id="logClose">✕</button></div></div>
+    <div id="log" class="log"></div>
+  </div>
+
+  <!-- Fortschritt -->
+  <div id="runOverlay" class="overlay">
+    <div class="run-card">
+      <div class="run-top">
+        <div class="ring"><svg viewBox="0 0 120 120"><defs><linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c5cff"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><circle cx="60" cy="60" r="52" class="ring-bg"/><circle cx="60" cy="60" r="52" class="ring-fg" id="ringFg"/></svg><div class="ring-txt" id="pctTxt">0%</div></div>
+        <div class="run-info">
+          <h2 id="runTitle">Deinstallation läuft</h2>
+          <p id="runText" class="run-text">Starte …</p>
+          <p id="runSub" class="muted"></p>
+        </div>
+      </div>
+      <div class="bar"><div id="barFill" class="bar-fill"></div></div>
+      <div id="runLog" class="log mini"></div>
+      <div class="run-actions"><button class="ghost" id="runSkip" hidden><svg viewBox="0 0 24 24"><path d="m5 4 10 8-10 8zM19 5v14"/></svg>Diese App überspringen</button><button class="primary" id="runDone" hidden>Fertig</button></div>
+    </div>
+  </div>
+
+  <!-- Reste-Vorschau -->
+  <div id="leftModal" class="overlay">
+    <div class="modal">
+      <h2>Gefundene Reste</h2>
+      <p class="muted">Diese Dateien, Ordner und Registry-Schlüssel gehören zu den deinstallierten Apps. Abwählen, was bleiben soll.</p>
+      <div id="leftList" class="left-list"></div>
+      <div class="modal-foot">
+        <span><b id="leftCount">0</b> Elemente · <span id="leftSize">0 B</span></span>
+        <div><button class="ghost" id="leftSkip">Überspringen</button><button class="danger" id="leftGo">Ausgewählte löschen</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bestätigen -->
+  <div id="confirmModal" class="overlay">
+    <div class="modal small">
+      <h2 id="confTitle"></h2>
+      <div id="confBody" class="conf-body"></div>
+      <div class="modal-foot"><span></span><div><button class="ghost" id="confNo">Abbrechen</button><button class="danger" id="confYes">Los geht's</button></div></div>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+  <script src="storage.js"></script>
+  <script src="optimize.js"></script>
+</body>
+</html>

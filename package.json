@@ -1,0 +1,27 @@
+{
+  "name": "purgo",
+  "productName": "Purgo",
+  "version": "1.0.0",
+  "description": "Purgo – Apps entfernen, Speicher bereinigen, Windows optimieren",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node test.js",
+    "dist": "electron-builder --win portable"
+  },
+  "build": {
+    "appId": "local.purgo",
+    "directories": { "output": "release" },
+    "files": ["main.js", "preload.js", "uninstaller.js", "cleaner.js", "optimizer.js", "ui/**"],
+    "win": {
+      "target": "portable",
+      "icon": "ui/icon.png",
+      "signAndEditExecutable": true
+    },
+    "portable": { "artifactName": "Purgo.exe" }
+  },
+  "devDependencies": {
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8"
+  }
+}

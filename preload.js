@@ -1,0 +1,27 @@
+const { contextBridge, ipcRenderer } = require('electron');
+
+contextBridge.exposeInMainWorld('api', {
+  isAdmin: () => ipcRenderer.invoke('admin'),
+  listApps: () => ipcRenderer.invoke('apps:list'),
+  icon: (app) => ipcRenderer.invoke('apps:icon', app),
+  run: (apps, opts) => ipcRenderer.invoke('run', apps, opts),
+  deleteLeftovers: (ids) => ipcRenderer.invoke('leftovers:delete', ids),
+  skip: () => ipcRenderer.invoke('skip'),
+  orphans: () => ipcRenderer.invoke('orphans:scan'),
+  optBloat: () => ipcRenderer.invoke('opt:bloat'),
+  optBloatRemove: (ids, prevent) => ipcRenderer.invoke('opt:bloatRemove', ids, prevent),
+  optTweaks: () => ipcRenderer.invoke('opt:tweaks'),
+  optTweak: (id, on) => ipcRenderer.invoke('opt:tweak', id, on),
+  optRestartExplorer: () => ipcRenderer.invoke('opt:restartExplorer'),
+  optStartup: () => ipcRenderer.invoke('opt:startup'),
+  optStartupSet: (id, on) => ipcRenderer.invoke('opt:startupSet', id, on),
+  drives: () => ipcRenderer.invoke('drives'),
+  cleanCats: () => ipcRenderer.invoke('clean:cats'),
+  cleanScan: () => ipcRenderer.invoke('clean:scan'),
+  cleanRun: (ids) => ipcRenderer.invoke('clean:run', ids),
+  largeScan: (drive, min) => ipcRenderer.invoke('large:scan', drive, min),
+  largeCancel: () => ipcRenderer.invoke('large:cancel'),
+  reveal: (p) => ipcRenderer.invoke('large:reveal', p),
+  trash: (paths) => ipcRenderer.invoke('large:trash', paths),
+  on: (ch, fn) => ipcRenderer.on(ch, (_e, d) => fn(d)),
+});
