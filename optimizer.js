@@ -50,6 +50,8 @@ const BLOAT = [
   ['Microsoft.OutlookForWindows', 'Outlook (neu)', 'Microsoft-Extras', false],
   ['Microsoft.Windows.DevHome', 'Dev Home', 'Microsoft-Extras', true],
   ['Microsoft.YourPhone', 'Smartphone-Link', 'Microsoft-Extras', false],
+  ['MicrosoftWindows.Client.WebExperience', 'Widgets (News & Wetter in der Taskleiste)', 'Microsoft-Extras', true],
+  ['Microsoft.StartExperiencesApp', 'Startmenü-/Widgets-Feed', 'Microsoft-Extras', true],
   // Drittanbieter (von Windows vorinstalliert)
   ['*CandyCrush*', 'Candy Crush', 'Drittanbieter', true],
   ['king.com.*', 'King-Spiele', 'Drittanbieter', true],
@@ -139,11 +141,11 @@ const TWEAKS = [
       r(ADV, 'Start_IrisRecommendations', 'REG_DWORD', 0, 1), r(ADV, 'ShowSyncProviderNotifications', 'REG_DWORD', 0, 1)] },
   { id: 'bing', group: 'Datenschutz', name: 'Bing-Websuche im Startmenü aus', desc: 'Die Suche im Startmenü durchsucht nur noch deinen PC.',
     regs: [r(CU + '\\Search', 'BingSearchEnabled', 'REG_DWORD', 0, 1), r('HKCU\\Software\\Policies\\Microsoft\\Windows\\Explorer', 'DisableSearchBoxSuggestions', 'REG_DWORD', 1)] },
-  { id: 'ai', group: 'Datenschutz', name: 'Copilot, Recall & Widgets aus', desc: 'Copilot-Knopf und KI-Schnappschüsse (Recall) deaktivieren, Widgets/News aus der Taskleiste entfernen.',
+  // Widgets hier bewusst nicht: UCPD blockiert den Dsh-Richtlinienschlüssel für reg.exe → Widgets stehen in der Bloatware-Liste
+  { id: 'ai', group: 'Datenschutz', name: 'Copilot & Recall aus', desc: 'Copilot-Knopf und KI-Schnappschüsse (Recall) deaktivieren. Widgets entfernst du oben unter Bloatware.',
     regs: [r('HKCU\\Software\\Policies\\Microsoft\\Windows\\WindowsCopilot', 'TurnOffWindowsCopilot', 'REG_DWORD', 1), r(ADV, 'ShowCopilotButton', 'REG_DWORD', 0, 1),
       r('HKCU\\Software\\Policies\\Microsoft\\Windows\\WindowsAI', 'DisableAIDataAnalysis', 'REG_DWORD', 1),
-      r('HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsAI', 'DisableAIDataAnalysis', 'REG_DWORD', 1),
-      r('HKLM\\SOFTWARE\\Policies\\Microsoft\\Dsh', 'AllowNewsAndInterests', 'REG_DWORD', 0)] },
+      r('HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\WindowsAI', 'DisableAIDataAnalysis', 'REG_DWORD', 1)] },
 
   { id: 'power', group: 'Leistung', name: 'Energieplan „Ultimative Leistung“', desc: 'Kein Heruntertakten im Leerlauf. Mehr Stromverbrauch – auf Laptops nicht empfohlen.', special: 'power' },
   { id: 'gaming', group: 'Leistung', name: 'Gaming-Tweaks', desc: 'Spielmodus an, GPU-Planung (HAGS) an, Xbox Game Bar-Aufnahme aus, Mausbeschleunigung aus. Teilweise erst nach Neustart aktiv.',
