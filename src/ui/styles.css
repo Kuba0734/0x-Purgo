@@ -282,7 +282,7 @@ main { flex: 1; min-height: 0; display: flex; gap: var(--s-4); padding: 0 var(--
 .k { font-size: 10.5px; font-weight: 550; padding: 1px 7px; border-radius: var(--r-xs); text-align: center; background: var(--surface-strong); color: var(--text-muted); }
 
 /* ---------- Toasts ---------- */
-#toasts { position: fixed; right: var(--s-5); bottom: var(--s-5); z-index: 40; display: flex; flex-direction: column; gap: var(--s-2); align-items: flex-end; pointer-events: none; }
+#toasts { position: fixed; right: var(--s-5); bottom: 76px; /* über der Fußleiste */ z-index: 40; display: flex; flex-direction: column; gap: var(--s-2); align-items: flex-end; pointer-events: none; }
 .toast {
   pointer-events: auto; min-width: 280px; max-width: 420px; padding: var(--s-3) var(--s-4) calc(var(--s-3) + 3px);
   border-radius: var(--r-md); background: var(--glass-strong); backdrop-filter: var(--blur);

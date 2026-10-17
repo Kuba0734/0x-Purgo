@@ -12,15 +12,15 @@ const inRound = (x, y, x0, y0, x1, y1, r) => {
 function shape(x, y) {
   if (!inRound(x, y, 8, 8, 248, 248, 58)) return null; // transparent
   const t = (x + y) / (2 * N);
-  let c = [mix(124, 34, t), mix(92, 211, t), mix(255, 238, t), 255];
-  const white = [255, 255, 255, 255];
+  let c = [mix(250, 196, t), mix(250, 196, t), mix(250, 200, t), 255];
+  const white = [9, 9, 11, 255]; // dunkles Symbol auf hellem (Akzent-)Grund
   if (inRound(x, y, 108, 54, 148, 76, 8)) c = white;              // Griff
-  if (inRound(x, y, 112, 62, 144, 76, 2)) c = [mix(124, 34, t), mix(92, 211, t), mix(255, 238, t), 255];
+  if (inRound(x, y, 112, 62, 144, 76, 2)) c = [mix(250, 196, t), mix(250, 196, t), mix(250, 200, t), 255];
   if (inRound(x, y, 70, 72, 186, 90, 9)) c = white;                // Deckel
   const k = (y - 100) / 104, inset = 8 * Math.max(0, k);
   if (y >= 100 && y <= 204 && inRound(x, y, 82 + inset, 100, 174 - inset, 204, 14)) {
     c = white;
-    for (const sx of [107, 128, 149]) if (Math.abs(x - sx) <= 5 && y >= 120 && y <= 184) c = [mix(124, 34, t), mix(92, 211, t), mix(255, 238, t), 255];
+    for (const sx of [107, 128, 149]) if (Math.abs(x - sx) <= 5 && y >= 120 && y <= 184) c = [mix(250, 196, t), mix(250, 196, t), mix(250, 200, t), 255];
   }
   return c;
 }
