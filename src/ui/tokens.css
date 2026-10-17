@@ -1,0 +1,103 @@
+/* Design-Tokens: alle Farben, Radien, Abstände und Animationszeiten. Siehe CLAUDE.md. */
+@font-face {
+  font-family: "Inter";
+  src: url("fonts/inter-latin-wght-normal.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Inter";
+  src: url("fonts/inter-latin-ext-wght-normal.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+:root {
+  color-scheme: dark;
+
+  /* Farben – monochrom */
+  --bg: #09090b;
+  --bg-glow: #18181b;
+  --surface: rgba(255, 255, 255, 0.03);
+  --surface-hover: rgba(255, 255, 255, 0.06);
+  --surface-strong: rgba(255, 255, 255, 0.09);
+  --glass: rgba(24, 24, 27, 0.6);
+  --glass-strong: rgba(18, 18, 20, 0.86);
+  --solid: #111113;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --text: #fafafa;
+  --text-muted: #a1a1aa;
+  --text-faint: #63636b;
+  --accent: #ffffff;
+  --on-accent: #09090b;
+  --accent-soft: rgba(255, 255, 255, 0.1);
+  --glow: rgba(255, 255, 255, 0.12);
+  --overlay: rgba(0, 0, 0, 0.62);
+
+  /* nur für Fehler, Löschen, Erfolg */
+  --danger: #ef4444;
+  --danger-soft: rgba(239, 68, 68, 0.12);
+  --on-danger: #ffffff;
+  --success: #22c55e;
+  --success-soft: rgba(34, 197, 94, 0.12);
+
+  /* Schrift */
+  --font: "Inter", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "Cascadia Code", Consolas, monospace;
+  --fs-xs: 11px;
+  --fs-sm: 12px;
+  --fs-md: 13.5px;
+  --fs-lg: 15px;
+  --fs-xl: 18px;
+  --fs-2xl: 26px;
+
+  /* Radien */
+  --r-xs: 6px;
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 20px;
+  --r-pill: 999px;
+
+  /* Abstände */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-8: 32px;
+  --s-10: 40px;
+
+  /* Größen */
+  --control-h: 38px;
+  --titlebar-h: 52px;
+
+  /* Schatten */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 8px 24px -8px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 24px 64px -16px rgba(0, 0, 0, 0.75);
+  --shadow-glow: 0 0 0 1px var(--border-strong), 0 8px 28px -6px var(--glow);
+
+  /* Glas */
+  --blur: blur(20px) saturate(140%);
+
+  /* Animation */
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --d-fast: 150ms;
+  --d-base: 220ms;
+  --d-slow: 300ms;
+  --d-toast: 4200ms;
+  --stagger: 50ms;
+  --lift: translateY(-2px);
+  --press: scale(0.97);
+}
+
+/* Animationen fast komplett aus: System-Einstellung oder eigene Einstellung */
+@media (prefers-reduced-motion: reduce) {
+  :root { --d-fast: 1ms; --d-base: 1ms; --d-slow: 1ms; --stagger: 0ms; --lift: none; --press: none; }
+}
+:root[data-motion="reduced"] { --d-fast: 1ms; --d-base: 1ms; --d-slow: 1ms; --stagger: 0ms; --lift: none; --press: none; }

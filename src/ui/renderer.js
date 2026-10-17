@@ -8,7 +8,53 @@ const fmtSize = (b) => {
 };
 const fmtDate = (d) => (/^\d{8}$/.test(d || '') ? `${d.slice(6, 8)}.${d.slice(4, 6)}.${d.slice(0, 4)}` : '—');
 const driveOf = (a) => ((a.location || (a.uninstall || '').replace(/^"/, '') || a.icon || '').match(/^([a-z]):/i) || [])[1]?.toUpperCase() || '';
-const hue = (s) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7);
+// Staffelung: max. 10 Elemente, Rest erscheint sofort mit
+const stag = (i) => `--i:${Math.min(i, 10)}`;
+const reduced = () => document.documentElement.dataset.motion === 'reduced' || matchMedia('(prefers-reduced-motion: reduce)').matches;
+const EMPTY_DETAILS = '<div class="empty-details"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M9 12h6M12 9v6"/></svg><p>Wähle eine App für Details</p></div>';
+
+// Zahl animiert hochzählen (nur Textinhalt, kein Layout)
+function animateNumber(el, from, to, fmt = (v) => String(Math.round(v)), ms = 700) {
+  if (!el) return;
+  if (reduced() || from === to) { el.textContent = fmt(to); return; }
+  const t0 = performance.now();
+  el._anim = t0;
+  const step = (t) => {
+    if (el._anim !== t0) return; // neuere Animation hat übernommen
+    const k = Math.min(1, (t - t0) / ms);
+    el.textContent = fmt(from + (to - from) * (1 - (1 - k) ** 3));
+    if (k < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+const TOAST_ICONS = {
+  success: '<svg viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></svg>',
+  danger: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>',
+  info: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
+};
+function toast(msg, type = 'info', ms = 4200) {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.setAttribute('role', type === 'danger' ? 'alert' : 'status');
+  el.innerHTML = `${TOAST_ICONS[type] || TOAST_ICONS.info}<span>${esc(msg)}</span><i class="toast-bar" style="animation-duration:${ms}ms"></i>`;
+  $('#toasts').appendChild(el);
+  requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('show')));
+  let left = ms, started = Date.now(), timer;
+  const close = () => { el.classList.remove('show'); setTimeout(() => el.remove(), 320); };
+  const arm = () => { started = Date.now(); timer = setTimeout(close, left); };
+  el.addEventListener('mouseenter', () => { clearTimeout(timer); left -= Date.now() - started; });
+  el.addEventListener('mouseleave', arm);
+  el.addEventListener('click', close);
+  arm();
+}
+
+const skelRows = (n) => Array.from({ length: n }, (_, i) => `
+  <div class="row skeleton stagger" style="${stag(i)}">
+    <span class="skel" style="width:18px;height:18px"></span>
+    <div class="app-cell"><span class="skel round" style="width:30px;height:30px"></span><span class="skel" style="width:${45 + ((i * 37) % 40)}%"></span></div>
+    <span class="skel" style="width:60%"></span><span class="skel" style="width:50%"></span><span class="skel" style="width:60%"></span><span class="skel" style="width:70%;margin-left:auto"></span>
+  </div>`).join('');
 
 let apps = [];
 const selected = new Set();
@@ -36,7 +82,6 @@ function addLog({ level, msg, t }) {
   $('#logCount').textContent = ++logN;
 }
 window.api.on('log', addLog);
-$('#logBtn').onclick = () => $('#logPanel').classList.toggle('open');
 $('#logClose').onclick = () => $('#logPanel').classList.remove('open');
 $('#logClear').onclick = () => { $('#log').innerHTML = ''; logN = 0; $('#logCount').textContent = 0; };
 
@@ -55,13 +100,13 @@ function visible() {
 
 function iconHtml(a) {
   const src = icons.get(a.key);
-  return `<div class="ico" style="--c:hsl(${hue(a.name)} 55% 42%)">${src ? `<img src="${src}" alt="">` : esc(a.name.trim()[0] || '?')}</div>`;
+  return `<div class="ico">${src ? `<img src="${src}" alt="">` : esc(a.name.trim()[0] || '?')}</div>`;
 }
 
 function render() {
   const list = visible();
   $('#list').innerHTML = list.map((a, i) => `
-    <div class="row${selected.has(a.key) ? ' sel' : ''}${focused === a.key ? ' focus' : ''}" data-key="${esc(a.key)}" style="animation-delay:${Math.min(i, 25) * 18}ms">
+    <div class="row stagger${selected.has(a.key) ? ' sel' : ''}${focused === a.key ? ' focus' : ''}" data-key="${esc(a.key)}" style="${stag(i)}">
       <label class="check"><input type="checkbox" ${selected.has(a.key) ? 'checked' : ''} aria-label="${esc(a.name)} auswählen"><span></span></label>
       <div class="app-cell">${iconHtml(a)}<span class="name">${esc(a.name)}</span>${a.type === 'store' ? '<span class="tag">Store</span>' : a.type === 'portable' ? `<span class="tag">${esc(a.source)}</span>` : ''}</div>
       <span class="cell">${esc(a.publisher || '—')}</span>
@@ -136,7 +181,7 @@ function showDetails(key) {
 
 // ---------- Laden ----------
 async function load() {
-  $('#loading').classList.remove('hide');
+  $('#list').innerHTML = skelRows(9);
   $('#refresh').classList.add('spin');
   try {
     apps = await window.api.listApps();
@@ -146,7 +191,6 @@ async function load() {
   }
   for (const k of [...selected]) if (!apps.some((a) => a.key === k)) selected.delete(k);
   render();
-  $('#loading').classList.add('hide');
   $('#refresh').classList.remove('spin');
   // Icons nachladen, ohne die Liste zu blockieren
   for (const a of apps) {
@@ -184,11 +228,11 @@ function confirmDialog(title, body) {
 
 function setProgress(pct, text, sub) {
   const p = Math.max(0, Math.min(100, pct));
-  $('#barFill').style.width = p + '%';
+  $('#barFill').style.transform = `scaleX(${p / 100})`;
   $('#barFill').classList.toggle('done', p >= 100);
-  $('#ringFg').style.strokeDashoffset = 326.7 * (1 - p / 100);
-  $('#ringFg').style.opacity = p > 0 ? 1 : 0; // runde Kappe sonst als Punkt bei 0 %
-  $('#pctTxt').textContent = Math.round(p) + '%';
+  const pctEl = $('#pctTxt');
+  animateNumber(pctEl, Number(pctEl.dataset.v || 0), p, undefined, 400);
+  pctEl.dataset.v = p;
   if (text && $('#runText').textContent !== text) {
     const el = $('#runText');
     el.textContent = text;
@@ -201,6 +245,8 @@ window.api.on('progress', ({ pct, text, index, total }) => setProgress(pct, text
 function openRun(title) {
   $('#runTitle').textContent = title;
   $('#runLog').innerHTML = '';
+  $('#pctTxt').dataset.v = 0;
+  $('#pctTxt').textContent = '0';
   $('#runDone').hidden = true;
   setProgress(0, 'Starte …', '');
   $('#runOverlay').classList.add('open');
@@ -217,7 +263,7 @@ function pickLeftovers(items) {
     for (const it of items) (groups[it.app] ||= []).push(it);
     $('#leftList').innerHTML = Object.entries(groups).map(([app, list]) => `
       <div class="lg"><h4>${esc(app)} <span class="muted">(${list.length})</span></h4>
-      ${list.map((it, i) => `<label class="li" style="animation-delay:${i * 30}ms">
+      ${list.map((it, i) => `<label class="li stagger" style="${stag(i)}">
         <span class="check"><input type="checkbox" data-id="${it.id}" checked><span></span></span>
         <span class="k ${it.kind}">${it.kind === 'reg' ? 'Registry' : it.kind === 'dir' ? 'Ordner' : 'Datei'}</span>
         <span class="p">${esc(it.path)}</span><span class="s">${it.kind === 'reg' ? '' : fmtSize(it.size)}</span></label>`).join('')}</div>`).join('');
@@ -260,6 +306,8 @@ $('#goBtn').onclick = async () => {
   }
   const failed = results.length - okKeys.size;
   setProgress(100, `${okKeys.size} deinstalliert${failed ? `, ${failed} fehlgeschlagen` : ''}`, '');
+  if (okKeys.size) toast(`${okKeys.size} App${okKeys.size === 1 ? '' : 's'} deinstalliert`, 'success');
+  if (failed) toast(`${failed} App${failed === 1 ? '' : 's'} nicht deinstalliert – Details im Log`, 'danger');
 
   if (leftovers.length) {
     $('#runOverlay').classList.remove('open');
@@ -269,6 +317,7 @@ $('#goBtn').onclick = async () => {
       const r = await window.api.deleteLeftovers(ids);
       setProgress(100, `${r.ok} Elemente gelöscht · ${fmtSize(r.freed)} freigegeben${r.failed ? ` · ${r.failed} Fehler` : ''}`, '');
       addLog({ level: r.failed ? 'warn' : 'ok', msg: `Bereinigung: ${r.ok} gelöscht, ${r.failed} Fehler, ${fmtSize(r.freed)} frei` });
+      toast(`Reste entfernt · ${fmtSize(r.freed) === '—' ? '0 B' : fmtSize(r.freed)} freigegeben`, r.failed ? 'danger' : 'success');
       await waitDone();
     }
   } else {
@@ -277,17 +326,16 @@ $('#goBtn').onclick = async () => {
   $('#runOverlay').classList.remove('open');
   for (const k of okKeys) selected.delete(k);
   apps = apps.filter((a) => !okKeys.has(a.key));
-  if (okKeys.has(focused)) { focused = null; $('#details').innerHTML = '<div class="empty-details"><div class="ghost-icon"></div><p>Wähle eine App für Details</p></div>'; }
+  if (okKeys.has(focused)) { focused = null; $('#details').innerHTML = EMPTY_DETAILS; }
   busy = false;
   loadDrives();
-  setTimeout(render, 450); // Ausblend-Animation abwarten
+  setTimeout(render, 320); // Ausblend-Animation abwarten
 };
 
 // ---------- Tabs ----------
 function moveInd() {
   const t = document.querySelector('.tab.active');
-  $('#tabInd').style.width = t.offsetWidth + 'px';
-  $('#tabInd').style.transform = `translateX(${t.offsetLeft - 3}px)`;
+  $('#tabInd').style.transform = `translateX(${t.offsetLeft - 3}px) scaleX(${t.offsetWidth / 100})`;
 }
 document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => {
   if (t.classList.contains('active')) return;
@@ -296,7 +344,12 @@ document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () 
   moveInd();
   document.dispatchEvent(new CustomEvent('page', { detail: t.dataset.page }));
 }));
-requestAnimationFrame(moveInd);
+// erste Position ohne Gleiten setzen; nach dem Laden der Schrift neu messen
+$('#tabInd').style.transition = 'none';
+moveInd();
+requestAnimationFrame(() => { $('#tabInd').style.transition = ''; });
+document.fonts.ready.then(moveInd);
+addEventListener('resize', moveInd);
 
 // Laufwerke für Filter (Speicher-Seite nutzt dieselbe Liste)
 let drives = [];
@@ -309,11 +362,30 @@ async function loadDrives() {
   document.dispatchEvent(new Event('drives'));
 }
 
+// ---------- Einstellungen ----------
+$('#setMotion').checked = document.documentElement.dataset.motion === 'reduced';
+$('#setMotion').addEventListener('change', (e) => {
+  if (e.target.checked) document.documentElement.dataset.motion = 'reduced';
+  else delete document.documentElement.dataset.motion;
+  try { localStorage.setItem('motion', e.target.checked ? 'reduced' : 'full'); } catch {}
+});
+$('#setBtn').onclick = (e) => { e.stopPropagation(); $('#logPanel').classList.remove('open'); $('#settingsPop').classList.toggle('open'); };
+$('#logBtn').onclick = (e) => { e.stopPropagation(); $('#settingsPop').classList.remove('open'); $('#logPanel').classList.toggle('open'); };
+// Klick daneben oder Esc schließt Popovers
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#settingsPop')) $('#settingsPop').classList.remove('open');
+  if (!e.target.closest('#logPanel, #logBtn')) $('#logPanel').classList.remove('open');
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { $('#settingsPop').classList.remove('open'); $('#logPanel').classList.remove('open'); }
+});
+
 // ---------- Start ----------
 loadDrives();
 window.api.isAdmin().then((admin) => {
   const b = $('#adminBadge');
-  b.textContent = admin ? 'Administrator' : 'Ohne Adminrechte – manche Apps lassen sich nicht entfernen';
-  b.className = 'badge ' + (admin ? 'ok' : 'warn');
+  b.textContent = admin ? 'Administrator' : 'Ohne Adminrechte';
+  b.title = admin ? '' : 'Manche Apps und Optimierungen brauchen Adminrechte';
+  b.className = 'badge' + (admin ? ' ok' : '');
 });
 load();

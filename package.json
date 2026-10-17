@@ -12,10 +12,10 @@
   "build": {
     "appId": "local.purgo",
     "directories": { "output": "release" },
-    "files": ["main.js", "preload.js", "uninstaller.js", "cleaner.js", "optimizer.js", "ui/**"],
+    "files": ["main.js", "preload.js", "uninstaller.js", "cleaner.js", "optimizer.js", "src/ui/**"],
     "win": {
       "target": "portable",
-      "icon": "ui/icon.png",
+      "icon": "src/ui/icon.png",
       "signAndEditExecutable": true
     },
     "portable": { "artifactName": "Purgo.exe" }

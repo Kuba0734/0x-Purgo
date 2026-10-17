@@ -16,19 +16,35 @@ document.addEventListener('page', (e) => {
 });
 document.addEventListener('drives', () => { if (cleanLoaded) renderDrives(); });
 
+const size0 = (v) => (fmtSize(v) === '—' ? '0 B' : fmtSize(v));
+const CHECK_SVG = '<span class="done-mark"><svg viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></svg></span>';
+const CAT_ICONS = {
+  temp: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  recycle: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
+  wu: '<path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/>',
+  browser: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+  shader: '<rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/>',
+  crash: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M12 12v3M12 18h.01"/>',
+  thumbs: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/>',
+  winold: '<rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/>',
+  dism: '<path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/>',
+};
+const skelList = (n) => Array.from({ length: n }, (_, i) => `<div class="skel-row stagger" style="${stag(i)}"><span class="skel" style="width:18px;height:18px"></span><span style="flex:1;display:grid;gap:6px"><span class="skel" style="width:${30 + ((i * 29) % 35)}%"></span><span class="skel" style="width:${50 + ((i * 17) % 30)}%;height:8px"></span></span><span class="skel" style="width:60px"></span></div>`).join('');
+
 // ---------- Laufwerke ----------
 function renderDrives() {
   $('#driveCards').innerHTML = drives.map((d, i) => {
     const used = d.size ? (d.size - d.free) / d.size : 0;
-    return `<div class="drive${$('#largeDrive').value === d.letter ? ' active' : ''}" data-l="${d.letter}" style="animation-delay:${i * 60}ms" tabindex="0">
+    return `<div class="drive lift stagger${$('#largeDrive').value === d.letter ? ' active' : ''}" data-l="${d.letter}" style="${stag(i)}" tabindex="0">
       <div class="drive-top"><div class="drive-ico">${d.letter}:</div><div><b>${esc(d.label || (d.system ? 'System' : 'Lokaler Datenträger'))}</b><span class="muted">${d.system ? 'Windows-Laufwerk' : 'Laufwerk ' + d.letter + ':'}</span></div></div>
-      <div class="drive-bar"><i data-w="${(used * 100).toFixed(1)}" class="${used > 0.9 ? 'full' : ''}"></i></div>
+      <div class="drive-bar"><i data-w="${used.toFixed(4)}" class="${used > 0.9 ? 'full' : ''}"></i></div>
       <div class="drive-foot"><span>${fmtSize(d.free)} frei</span><span>${fmtSize(d.size)} gesamt</span></div></div>`;
   }).join('');
   const cur = $('#largeDrive').value;
   $('#largeDrive').innerHTML = drives.map((d) => `<option value="${d.letter}">${d.letter}:</option>`).join('');
   if (cur) $('#largeDrive').value = cur;
-  requestAnimationFrame(() => document.querySelectorAll('.drive-bar i').forEach((i) => { i.style.width = i.dataset.w + '%'; }));
+  // Füllstand per scaleX (kein Layout-Animieren)
+  requestAnimationFrame(() => requestAnimationFrame(() => document.querySelectorAll('.drive-bar i').forEach((i) => { i.style.transform = `scaleX(${i.dataset.w})`; })));
 }
 function pickDrive(l) {
   $('#largeDrive').value = l;
@@ -48,11 +64,11 @@ async function initClean() {
     catState.set(c.id, { on: Array.isArray(saved) ? saved.includes(c.id) : c.def, size: 0, count: 0, scanning: true });
   }
   $('#catGrid').innerHTML = cats.map((c, i) => `
-    <div class="cat" data-id="${c.id}" style="animation-delay:${i * 45}ms" role="checkbox" tabindex="0">
-      <div class="cat-ico">${c.icon}</div>
+    <div class="cat lift stagger" data-id="${c.id}" style="${stag(i)}" role="checkbox" tabindex="0">
+      <div class="cat-ico"><svg viewBox="0 0 24 24">${CAT_ICONS[c.id] || CAT_ICONS.temp}</svg></div>
       <div><h3>${esc(c.name)}${c.admin && !adminFlag ? '<span class="tag">Admin</span>' : ''}</h3><p>${esc(c.desc)}</p></div>
       <span class="check"><input type="checkbox" tabindex="-1"><span></span></span>
-      <div class="cat-size"><b>…</b><span class="muted"></span></div>
+      <div class="cat-size"><b></b><span class="muted"></span></div>
     </div>`).join('');
   cats.forEach((c) => updateCat(c.id));
   scanCats();
@@ -66,16 +82,6 @@ function scanCats() {
 }
 $('#cleanRescan').onclick = () => !cleanBusy && scanCats();
 
-function countUp(el, from, to) {
-  const t0 = performance.now();
-  const step = (t) => {
-    const k = Math.min(1, (t - t0) / 800);
-    const e = 1 - (1 - k) ** 3;
-    el.textContent = fmtSize(from + (to - from) * e) === '—' ? '0 B' : fmtSize(from + (to - from) * e);
-    if (k < 1) requestAnimationFrame(step);
-  };
-  requestAnimationFrame(step);
-}
 
 window.api.on('clean:size', ({ id, size, count }) => {
   const s = catState.get(id);
@@ -84,7 +90,7 @@ window.api.on('clean:size', ({ id, size, count }) => {
   Object.assign(s, { size, count, scanning: false });
   updateCat(id);
   const b = document.querySelector(`.cat[data-id="${id}"] .cat-size b`);
-  if (b && size !== null) countUp(b, prev, size);
+  if (b && size !== null) animateNumber(b, prev, size, size0, 800);
   updateCleanBar();
 });
 
@@ -98,10 +104,12 @@ function updateCat(id) {
   el.setAttribute('aria-checked', s.on);
   el.querySelector('input').checked = s.on;
   const b = el.querySelector('.cat-size b');
-  if (s.scanning) b.textContent = 'Analysiere …';
+  if (s.scanning) b.innerHTML = '<span class="skel"></span>';
   else if (s.size === null) b.textContent = 'Variabel';
   else if (!s.size) b.textContent = '0 B';
-  el.querySelector('.cat-size .muted').textContent = s.scanning || s.size === null ? '' : `${s.count} Element${s.count === 1 ? '' : 'e'}`;
+  const m = el.querySelector('.cat-size .muted');
+  if (s.done) m.innerHTML = CHECK_SVG;
+  else m.textContent = s.scanning || s.size === null ? '' : `${s.count} Element${s.count === 1 ? '' : 'e'}`;
 }
 
 function toggleCat(id) {
@@ -136,6 +144,7 @@ $('#cleanGo').onclick = async () => {
   for (const [id, r] of Object.entries(res)) { total += r.freed; catState.get(id).done = true; updateCat(id); }
   setProgress(100, `${fmtSize(total) === '—' ? '0 B' : fmtSize(total)} freigegeben`, '');
   addLog({ level: 'ok', msg: `Bereinigung fertig: ${fmtSize(total)} freigegeben` });
+  toast(`Bereinigung fertig · ${size0(total)} freigegeben`, 'success');
   await waitDone();
   $('#runOverlay').classList.remove('open');
   cleanBusy = false;
@@ -173,12 +182,12 @@ function renderLarge() {
   const max = large[0] ? large[0].size : 1;
   $('#largeList').innerHTML = large.map((f, i) => {
     const cut = f.path.lastIndexOf('\\');
-    return `<div class="lf" data-i="${i}" style="animation-delay:${Math.min(i, 30) * 15}ms">
+    return `<div class="lf stagger" data-i="${i}" style="${stag(i)}">
       <label class="check"><input type="checkbox" ${largeSel.has(f.path) ? 'checked' : ''} aria-label="${esc(f.path.slice(cut + 1))} auswählen"><span></span></label>
       <div class="nm"><b>${esc(f.path.slice(cut + 1))}</b><span>${esc(f.path.slice(0, cut))}</span><div class="lf-bar" style="width:${Math.max(2, (f.size / max) * 100)}%"></div></div>
       <span class="sz">${fmtSize(f.size)}</span>
       <span class="dt">${fmtDay(f.mtime)}</span>
-      <button class="rel" title="Im Explorer zeigen"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></button>
+      <button class="rel" title="Im Explorer zeigen" aria-label="Im Explorer zeigen"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></button>
     </div>`;
   }).join('');
 }
@@ -203,7 +212,8 @@ $('#largeTrash').onclick = async () => {
   const ok = await confirmDialog(`${paths.length} Datei${paths.length === 1 ? '' : 'en'} in den Papierkorb?`,
     `<ul>${paths.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>Du kannst sie aus dem Papierkorb wiederherstellen. Platz wird erst frei, wenn du ihn leerst.`);
   if (!ok) return;
-  await window.api.trash(paths);
+  const moved = await window.api.trash(paths);
+  toast(`${moved} Datei${moved === 1 ? '' : 'en'} in den Papierkorb verschoben`, moved === paths.length ? 'success' : 'danger');
   // Nur wirklich verschobene Dateien entfernen
   const rows = [...document.querySelectorAll('.lf')];
   const gone = new Set();
@@ -228,6 +238,7 @@ $('#orphGo').onclick = async () => {
   $('#orphList').innerHTML = '';
   orphSel.clear(); updateOrph();
   $('#orphStatus').innerHTML = '<div class="spinner"></div><span>Vergleiche Ordner, Registry und Verknüpfungen mit den installierten Apps …</span>';
+  $('#orphList').innerHTML = skelList(6);
   try {
     orphans = await window.api.orphans();
   } catch (e) {
@@ -256,7 +267,7 @@ function renderOrph() {
       list.map((o) => {
         const name = o.path.split('\\').pop();
         const sub = o.note ? (o.kind === 'file' ? 'Ziel fehlt: ' + o.note : o.note) : o.path;
-        return `<div class="lf" data-id="${o.id}" style="animation-delay:${Math.min(n++, 30) * 15}ms">
+        return `<div class="lf stagger" data-id="${o.id}" style="${stag(n++)}">
           <label class="check"><input type="checkbox" ${orphSel.has(o.id) ? 'checked' : ''} aria-label="${esc(name)} auswählen"><span></span></label>
           <div class="nm"><b><span class="k ${o.kind}">${KIND[o.kind]}</span>${esc(name)}</b><span title="${esc(o.path)}">${esc(sub)}</span></div>
           <span class="sz">${o.kind === 'reg' ? '' : fmtSize(o.size)}</span>
@@ -292,7 +303,8 @@ $('#orphDel').onclick = async () => {
   if (!ok) return;
   openRun('Entferne Reste');
   const r = await window.api.deleteLeftovers(chosen.map((o) => o.id));
-  setProgress(100, `${r.ok} Elemente gelöscht · ${fmtSize(r.freed) === '—' ? '0 B' : fmtSize(r.freed)} freigegeben${r.failed ? ` · ${r.failed} Fehler` : ''}`, '');
+  setProgress(100, `${r.ok} Elemente gelöscht · ${size0(r.freed)} freigegeben${r.failed ? ` · ${r.failed} Fehler` : ''}`, '');
+  toast(`${r.ok} Reste gelöscht · ${size0(r.freed)} freigegeben`, r.failed ? 'danger' : 'success');
   await waitDone();
   $('#runOverlay').classList.remove('open');
   const ids = new Set(chosen.map((o) => o.id));

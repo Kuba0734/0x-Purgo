@@ -1,4 +1,4 @@
-// Erzeugt ui/icon.png (256×256): Verlaufs-Quadrat mit Papierkorb. Aufruf: node tools/make-icon.js
+// Erzeugt src/ui/icon.png (256×256): monochromes Quadrat mit Papierkorb. Aufruf: node tools/make-icon.js
 const fs = require('fs');
 const zlib = require('zlib');
 const path = require('path');
@@ -48,5 +48,5 @@ const chunk = (type, data) => {
 const ihdr = Buffer.alloc(13);
 ihdr.writeUInt32BE(N, 0); ihdr.writeUInt32BE(N, 4); ihdr[8] = 8; ihdr[9] = 6;
 const png = Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr), chunk('IDAT', zlib.deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]);
-fs.writeFileSync(path.join(__dirname, '..', 'ui', 'icon.png'), png);
-console.log('ui/icon.png geschrieben');
+fs.writeFileSync(path.join(__dirname, '..', 'src', 'ui', 'icon.png'), png);
+console.log('src/ui/icon.png geschrieben');

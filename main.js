@@ -52,12 +52,12 @@ async function relaunchElevated() {
 function createWindow() {
   win = new BrowserWindow({
     width: 1280, height: 820, minWidth: 980, minHeight: 640,
-    backgroundColor: '#0a0b10', show: false, icon: path.join(__dirname, 'ui', 'icon.png'),
-    titleBarStyle: 'hidden', titleBarOverlay: { color: '#0a0b10', symbolColor: '#c9cbe0', height: 52 },
+    backgroundColor: '#09090b', show: false, icon: path.join(__dirname, 'src', 'ui', 'icon.png'),
+    titleBarStyle: 'hidden', titleBarOverlay: { color: '#09090b', symbolColor: '#a1a1aa', height: 52 },
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false },
   });
   win.setMenu(null);
-  win.loadFile(path.join(__dirname, 'ui', 'index.html'));
+  win.loadFile(path.join(__dirname, 'src', 'ui', 'index.html'));
   win.once('ready-to-show', () => win.show());
   win.webContents.on('console-message', (_e, level, msg) => level >= 2 && console.error('[renderer]', msg));
 }
